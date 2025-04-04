@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import MiniKitProvider from '@/components/minikit-provider'
 
 export const metadata: Metadata = {
   title: 'Breeze',
@@ -14,7 +15,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <MiniKitProvider>
+        <body>{children}</body>
+      </MiniKitProvider>
     </html>
   )
 }

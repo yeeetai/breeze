@@ -5,10 +5,12 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Loader2 } from "lucide-react"
+import { MiniKit, VerifyCommandInput, VerificationLevel, ISuccessResult } from '@worldcoin/minikit-js'
 
 export default function HomePage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
+  const [isVerified, setIsVerified] = useState(false)
 
   const handleStartChat = () => {
     setIsLoading(true)
@@ -17,6 +19,44 @@ export default function HomePage() {
       router.push("/matching")
     }, 1000)
   }
+
+  const verifyPayload: VerifyCommandInput = {
+    action: 'matching', // This is your action ID from the Developer Portal
+    verification_level: VerificationLevel.Device, // Orb | Device
+  }
+
+  const handleVerify = async () => {
+    if (!MiniKit.isInstalled()) {
+      return
+    }
+    // World App will open a drawer prompting the user to confirm the operation, promise is resolved once user confirms or cancels
+    const { finalPayload } = await MiniKit.commandsAsync.verify(verifyPayload)
+    if (finalPayload.status === 'error') {
+      return console.log('Error payload', finalPayload)
+    }
+
+    // Verify the proof in the backend
+    const verifyResponse = await fetch('/api/verify', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        payload: finalPayload as ISuccessResult, // Parses only the fields we need to verify
+        action: 'matching',
+      }),
+    })
+
+    // TODO: Handle Success!
+    const verifyResponseJson = await verifyResponse.json()
+    if (verifyResponseJson.status === 200) {
+      console.log('Verification success!')
+      setIsVerified(true)
+    } else {
+      console.error('Verification failed:', verifyResponseJson.status)
+    }
+  }
+
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-slate-100 to-slate-200 p-4">
@@ -52,14 +92,21 @@ export default function HomePage() {
           </div>
         </CardContent>
         <CardFooter>
-          <Button className="w-full" size="lg" onClick={handleStartChat} disabled={isLoading}>
+          <Button className="w-full" size="lg" onClick={(e) => {
+            e.preventDefault()
+            if (!isVerified) {
+              handleVerify()
+              return
+            }
+            handleStartChat()
+          }} disabled={isLoading}>
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Connecting...
+                {isVerified ? "Connecting..." : "Verifying..."}
               </>
             ) : (
-              "Start Chatting"
+              isVerified ? "Start Chatting" : "Verify"
             )}
           </Button>
         </CardFooter>
