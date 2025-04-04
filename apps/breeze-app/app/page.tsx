@@ -30,12 +30,7 @@ export default function HomePage() {
     }, 1000)
   }
 
-  const verifyPayload: VerifyCommandInput = {
-    action: 'matching', // This is your action ID from the Developer Portal
-    verification_level: VerificationLevel.Device, // Orb | Device
-  }
-
-  const handleVerify = async () => {
+  const signInWithWallet = async () => {
     try {
       setIsLoading(true)
       if (!MiniKit.isInstalled()) {
@@ -44,35 +39,54 @@ export default function HomePage() {
         return
       }
 
-      const { finalPayload } = await MiniKit.commandsAsync.verify(verifyPayload)
+      const res = await fetch('/api/nonce', {
+        cache: 'no-store'
+      })
+      if (!res.ok) {
+        throw new Error(`Get nonce failed: ${res.status} ${res.statusText}`)
+      }
+      const { nonce } = await res.json()
+
+      console.log("Using walletAuth...")
+      const { commandPayload: generateMessageResult, finalPayload } = await MiniKit.commandsAsync.walletAuth({
+        nonce: nonce,
+      })
+
       if (finalPayload.status === 'error') {
-        setErrorMessage("Verification failed. Please try again.")
+        setErrorMessage("Wallet authentication failed")
         setShowErrorDialog(true)
         return
       }
 
-      const verifyResponse = await fetch('/api/verify', {
+      const siweResponse = await fetch('/api/complete-siwe', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        cache: 'no-store',
         body: JSON.stringify({
-          payload: finalPayload as ISuccessResult,
-          action: 'matching',
+          payload: finalPayload,
+          nonce,
         }),
       })
 
-      const verifyResponseJson = await verifyResponse.json()
-      if (verifyResponseJson.status === 200) {
-        console.log('Verification success!')
+      if (!siweResponse.ok) {
+        throw new Error(`SIWE verification failed: ${siweResponse.status} ${siweResponse.statusText}`)
+      }
+
+      const siweResult = await siweResponse.json()
+      console.log("SIWE result:", siweResult)
+
+      if (siweResult.isValid) {
         setIsVerified(true)
         setShowSuccessDialog(true)
       } else {
-        setErrorMessage("Verification failed. Please try again.")
+        setErrorMessage(siweResult.message || "Verification failed")
         setShowErrorDialog(true)
       }
     } catch (error) {
-      setErrorMessage("An error occurred. Please try again.")
+      console.error("Error:", error)
+      setErrorMessage(error instanceof Error ? error.message : "An error occurred. Please try again.")
       setShowErrorDialog(true)
     } finally {
       setIsLoading(false)
@@ -117,7 +131,7 @@ export default function HomePage() {
             <Button className="w-full" size="lg" onClick={(e) => {
               e.preventDefault()
               if (!isVerified) {
-                handleVerify()
+                signInWithWallet()
                 return
               }
               handleStartChat()
