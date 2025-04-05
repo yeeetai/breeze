@@ -105,47 +105,61 @@ export default function HomePage() {
 
   return (
     <>
-      <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-slate-100 to-slate-200 p-4">
-        <Card className="w-full max-w-md">
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-breeze-mint to-breeze-cyan p-4">
+        <Card className="w-full max-w-md border-breeze-aqua bg-white/90 backdrop-blur-sm">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold">Anonymous Chat</CardTitle>
-            <CardDescription>Connect with random people for 5-minute anonymous conversations</CardDescription>
+            <CardTitle className="text-2xl font-bold text-breeze-dark-turquoise">Breeze</CardTitle>
+            <CardDescription className="text-lg mt-2 font-medium text-breeze-dark-cyan">Light as Air, Real as You.</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col items-center space-y-6 p-6">
-            <div className="rounded-full bg-primary/10 p-6">
+            <div className="rounded-full bg-gradient-to-b from-breeze-mint to-breeze-cyan p-6">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="64"
                 height="64"
                 viewBox="0 0 24 24"
                 fill="none"
-                stroke="currentColor"
+                stroke="white"
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                className="text-primary"
+                className="drop-shadow-md"
               >
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
               </svg>
             </div>
-            <div className="space-y-2 text-center">
-              <h3 className="text-lg font-medium">How it works</h3>
-              <ul className="text-sm text-muted-foreground">
-                <li>• You'll be matched with a random person</li>
-                <li>• Chat anonymously for 5 minutes</li>
-                <li>• When time's up, the chat ends</li>
+            <div className="space-y-4 text-center">
+              {/* <h3 className="text-xl font-medium text-breeze-dark-turquoise mb-3">How it works</h3> */}
+              <ul className="text-base space-y-3 text-breeze-dark-cyan">
+                <li className="flex items-center justify-center space-x-2">
+                  <span className="text-breeze-aqua">•</span>
+                  <span>Meet someone real, at random.</span>
+                </li>
+                <li className="flex items-center justify-center space-x-2">
+                  <span className="text-breeze-aqua">•</span>
+                  <span>Chat freely, for 5 minutes.</span>
+                </li>
+                <li className="flex items-center justify-center space-x-2">
+                  <span className="text-breeze-aqua">•</span>
+                  <span>When time's up, a new friend awaits.</span>
+                </li>
               </ul>
             </div>
           </CardContent>
           <CardFooter>
-            <Button className="w-full" size="lg" onClick={(e) => {
-              e.preventDefault()
-              if (!isVerified) {
-                signInWithWallet()
-                return
-              }
-              handleStartChat()
-            }} disabled={isLoading}>
+            <Button
+              className="w-full bg-gradient-to-r from-breeze-mint to-breeze-cyan hover:opacity-90 text-white shadow-md"
+              size="lg"
+              onClick={(e) => {
+                e.preventDefault()
+                if (!isVerified) {
+                  signInWithWallet()
+                  return
+                }
+                handleStartChat()
+              }}
+              disabled={isLoading}
+            >
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -161,21 +175,24 @@ export default function HomePage() {
 
       {/* Success Dialog */}
       <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
-        <DialogContent className="w-[90%] max-w-[320px] rounded-lg">
+        <DialogContent className="w-[90%] max-w-[320px] rounded-lg border-breeze-aqua bg-white/90 backdrop-blur-sm">
           <DialogHeader>
             <div className="flex items-center justify-center">
-              <CheckCircle2 className="h-12 w-12 text-green-500" />
+              <CheckCircle2 className="h-12 w-12 text-breeze-mint" />
             </div>
-            <DialogTitle className="text-center">Verification Successful!</DialogTitle>
-            <DialogDescription className="text-center">
+            <DialogTitle className="text-center text-breeze-dark-turquoise">Verification Successful!</DialogTitle>
+            <DialogDescription className="text-center text-breeze-dark-cyan">
               Your identity has been verified. You can now start chatting with random people.
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-center">
-            <Button onClick={() => {
-              setShowSuccessDialog(false)
-              handleStartChat()
-            }}>
+            <Button
+              className="bg-gradient-to-r from-breeze-mint to-breeze-cyan hover:opacity-90 text-white shadow-md"
+              onClick={() => {
+                setShowSuccessDialog(false)
+                handleStartChat()
+              }}
+            >
               Start Chatting
             </Button>
           </div>
@@ -184,18 +201,21 @@ export default function HomePage() {
 
       {/* Error Dialog */}
       <Dialog open={showErrorDialog} onOpenChange={setShowErrorDialog}>
-        <DialogContent className="w-[90%] max-w-[320px] rounded-lg">
+        <DialogContent className="w-[90%] max-w-[320px] rounded-lg border-breeze-aqua bg-white/90 backdrop-blur-sm">
           <DialogHeader>
             <div className="flex items-center justify-center">
               <XCircle className="h-12 w-12 text-red-500" />
             </div>
-            <DialogTitle className="text-center">Verification Failed</DialogTitle>
-            <DialogDescription className="text-center">
+            <DialogTitle className="text-center text-breeze-dark-turquoise">Verification Failed</DialogTitle>
+            <DialogDescription className="text-center text-breeze-dark-cyan">
               {errorMessage}
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-center">
-            <Button onClick={() => setShowErrorDialog(false)}>
+            <Button
+              className="bg-gradient-to-r from-breeze-mint to-breeze-cyan hover:opacity-90 text-white shadow-md"
+              onClick={() => setShowErrorDialog(false)}
+            >
               Try Again
             </Button>
           </div>

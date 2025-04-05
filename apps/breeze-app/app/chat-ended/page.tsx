@@ -1,37 +1,37 @@
 "use client"
 
-import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { useRouter } from "next/navigation"
+import { ArrowLeft, MessageSquare } from "lucide-react"
 
 export default function ChatEndedPage() {
   const router = useRouter()
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-slate-100 to-slate-200 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">Chat Ended</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col items-center space-y-6 p-6 text-center">
-          <div className="rounded-full bg-primary/10 p-6">
-            <span className="text-6xl">👋</span>
-          </div>
-          <div className="space-y-2">
-            <p className="text-sm text-muted-foreground">
-              Would you like to start a new conversation with someone else?
-            </p>
-          </div>
-        </CardContent>
-        <CardFooter className="flex flex-col space-y-2">
-          <Button className="w-full" size="lg" onClick={() => router.push("/matching")}>
+    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-breeze-mint to-breeze-cyan p-4">
+      <div className="flex flex-col items-center space-y-6 rounded-2xl bg-white/90 backdrop-blur-sm p-8 text-center border border-breeze-aqua">
+        <h1 className="text-2xl font-semibold text-breeze-dark-turquoise">Chat Ended</h1>
+        <p className="text-breeze-dark-cyan whitespace-pre-line">
+          Ready to meet someone new? {'\n'}Start another exciting conversation!
+        </p>
+        <div className="flex flex-col space-y-3 w-full">
+          <Button
+            onClick={() => router.push("/matching")}
+            className="bg-gradient-to-r from-breeze-mint to-breeze-cyan hover:opacity-90 text-white"
+          >
+            <MessageSquare className="mr-2 h-4 w-4" />
             Start New Chat
           </Button>
-          <Button className="w-full" variant="outline" size="lg" onClick={() => router.push("/")}>
-            Back to Home
+          <Button
+            onClick={() => router.push("/")}
+            variant="outline"
+            className="border-breeze-aqua text-breeze-dark-turquoise hover:bg-breeze-mint/10"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Return to Home
           </Button>
-        </CardFooter>
-      </Card>
+        </div>
+      </div>
     </div>
   )
 }

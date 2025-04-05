@@ -48,27 +48,27 @@ export default function MatchingPage() {
   }, [router])
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-slate-100 to-slate-200 p-4">
-      <Card className="w-full max-w-md">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-breeze-mint to-breeze-cyan p-4">
+      <Card className="w-full max-w-md border-breeze-aqua bg-white/90 backdrop-blur-sm">
         <CardContent className="pt-6">
           <div className="flex flex-col items-center space-y-6 p-6 text-center">
             <div className="relative">
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="h-16 w-16 rounded-full bg-primary/10 animate-ping" />
+                <div className="h-16 w-16 rounded-full bg-breeze-mint/30 animate-ping" />
               </div>
-              <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-primary/20">
-                <div className="h-12 w-12 rounded-full bg-primary animate-pulse" />
+              <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-b from-breeze-mint to-breeze-cyan">
+                <div className="h-12 w-12 rounded-full bg-white/90 backdrop-blur-sm animate-pulse" />
               </div>
             </div>
 
             <div className="space-y-2">
-              <h3 className="text-xl font-medium">Finding a chat partner...</h3>
-              <p className="text-sm text-muted-foreground">Searching for {searchTime} seconds</p>
+              <h3 className="text-xl font-medium text-breeze-dark-turquoise">Finding a chat partner...</h3>
+              <p className="text-base text-breeze-dark-cyan">Searching for {searchTime} seconds</p>
             </div>
 
             <div className="w-full space-y-2">
-              <Progress value={progress} className="h-2 w-full" />
-              <p className="text-xs text-muted-foreground">Matching you with someone to chat with</p>
+              <Progress value={progress} className="h-2 w-full bg-breeze-mint/20" />
+              <p className="text-sm text-breeze-dark-cyan">Matching you with someone to chat with</p>
             </div>
           </div>
         </CardContent>
