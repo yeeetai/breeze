@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
+import { socketClient } from "@/lib/socket-client"
 
 export default function MatchingPage() {
   const router = useRouter()
@@ -11,6 +12,17 @@ export default function MatchingPage() {
   const [searchTime, setSearchTime] = useState(0)
 
   useEffect(() => {
+    // socket connect
+    socketClient.connect()
+
+    // Listen for match success event
+    socketClient.onMatchSuccess((data) => {
+      clearInterval(progressInterval)
+      clearInterval(timeInterval)
+      // Pass roomId to chat page
+      router.push(`/chat?roomId=${data.roomId}`)
+    })
+
     const progressInterval = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 100) {
@@ -25,20 +37,13 @@ export default function MatchingPage() {
       setSearchTime((prev) => prev + 1)
     }, 1000)
 
-    // Simulate finding a match after a random time between 3-8 seconds
-    const matchTimeout = setTimeout(
-      () => {
-        clearInterval(progressInterval)
-        clearInterval(timeInterval)
-        router.push("/chat")
-      },
-      Math.floor(Math.random() * 5000) + 3000,
-    )
+    // Send find match request
+    socketClient.findMatch()
 
     return () => {
       clearInterval(progressInterval)
       clearInterval(timeInterval)
-      clearTimeout(matchTimeout)
+      socketClient.disconnect()
     }
   }, [router])
 

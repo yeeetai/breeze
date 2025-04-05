@@ -1,13 +1,13 @@
 "use client"
 
 import type React from "react"
-
 import { useEffect, useRef, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Send, Clock } from "lucide-react"
+import { Send, Clock, LogOut } from "lucide-react"
+import { socketClient } from "@/lib/socket-client"
 
 type Message = {
   id: string
@@ -18,14 +18,9 @@ type Message = {
 
 export default function ChatPage() {
   const router = useRouter()
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "1",
-      content: "Hi there! What would you like to talk about?",
-      sender: "partner",
-      timestamp: new Date(),
-    },
-  ])
+  const searchParams = useSearchParams()
+  const roomId = searchParams.get("roomId")
+  const [messages, setMessages] = useState<Message[]>([])
   const [inputValue, setInputValue] = useState("")
   const [timeLeft, setTimeLeft] = useState(300) // 5 minutes in seconds
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -56,44 +51,52 @@ export default function ChatPage() {
     return () => clearInterval(timer)
   }, [timeLeft, router])
 
-  // Simulate partner typing
+  // Socket connection and message handling
   useEffect(() => {
-    const partnerResponses = [
-      "That's interesting! Tell me more.",
-      "I've been thinking about that too recently.",
-      "What do you think about that topic?",
-      "I've never thought about it that way before.",
-      "That reminds me of something I read recently.",
-    ]
-
-    const lastMessage = messages[messages.length - 1]
-
-    if (lastMessage && lastMessage.sender === "user") {
-      const timeout = setTimeout(
-        () => {
-          const randomResponse = partnerResponses[Math.floor(Math.random() * partnerResponses.length)]
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: Date.now().toString(),
-              content: randomResponse,
-              sender: "partner",
-              timestamp: new Date(),
-            },
-          ])
-        },
-        Math.random() * 2000 + 1000,
-      )
-
-      return () => clearTimeout(timeout)
+    if (!roomId) {
+      router.push("/")
+      return
     }
-  }, [messages])
+
+    // Connect to socket
+    socketClient.connect()
+
+    // Join the room
+    socketClient.joinRoom(roomId)
+
+    // Listen for messages
+    socketClient.onReceiveMessage((data) => {
+      console.log("Received message:", data) // 添加调试日志
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now().toString(),
+          content: data.message,
+          sender: "partner",
+          timestamp: new Date(),
+        },
+      ])
+    })
+
+    // Listen for partner leaving
+    socketClient.onPartnerLeft(() => {
+      router.push("/chat-ended")
+    })
+
+    return () => {
+      socketClient.disconnect()
+    }
+  }, [roomId, router])
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!inputValue.trim()) return
+    if (!inputValue.trim() || !roomId) return
 
+    // Send message through socket
+    socketClient.sendMessage(roomId, inputValue)
+
+    // Add message to local state
     setMessages((prev) => [
       ...prev,
       {
@@ -125,9 +128,8 @@ export default function ChatPage() {
           {messages.map((message) => (
             <div key={message.id} className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"}`}>
               <div
-                className={`max-w-[80%] rounded-lg px-4 py-2 ${
-                  message.sender === "user" ? "bg-primary text-primary-foreground" : "bg-slate-200 text-slate-900"
-                }`}
+                className={`max-w-[80%] rounded-lg px-4 py-2 ${message.sender === "user" ? "bg-primary text-primary-foreground" : "bg-slate-200 text-slate-900"
+                  }`}
               >
                 <p>{message.content}</p>
                 <p className="mt-1 text-right text-xs opacity-70">
@@ -142,6 +144,20 @@ export default function ChatPage() {
 
       <CardFooter className="border-t bg-white p-4">
         <form onSubmit={handleSendMessage} className="flex w-full space-x-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="shrink-0"
+            onClick={() => {
+              if (confirm("Are you sure you want to leave this chat?")) {
+                router.push("/")
+              }
+            }}
+          >
+            <LogOut className="h-4 w-4" />
+            <span className="sr-only">Leave Room</span>
+          </Button>
           <Input
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
