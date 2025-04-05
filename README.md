@@ -1,84 +1,91 @@
-# Turborepo starter
+# Breeze - Real-time Anonymous Chat Application
 
-This Turborepo starter is maintained by the Turborepo core team.
+<div align="center">
+  <img src="./apps/breeze-app/public/breeze_with_name.png" alt="Breeze Logo" width="200"/>
+</div>
 
-## Using this example
+Breeze is a real-time anonymous chat application that allows users to connect with random people for meaningful conversations. The application features a clean, modern interface and incorporates World ID verification for enhanced security and authenticity.
 
-Run the following command:
+## Features
 
-```sh
-npx create-turbo@latest
-```
+- 🎯 **Random Matching**: Connect with random people for meaningful conversations
+- ⏱️ **Time-limited Chats**: 5-minute chat sessions to encourage genuine interactions
+- 🔒 **World ID Verification**: Secure identity verification using World ID
+- 💬 **Real-time Chat**: Instant messaging with typing indicators
+- 🎨 **Modern UI**: Clean and intuitive user interface with Breeze theme
+- 🔄 **World ID Exchange**: Exchange World IDs with your match after successful connection
 
-## What's inside?
+## Tech Stack
 
-This Turborepo includes the following packages/apps:
+- **Frontend**: Next.js, TypeScript, Tailwind CSS
+- **Real-time Communication**: Socket.io
+- **Authentication**: World ID, SIWE (Sign In With Ethereum)
+- **Styling**: Tailwind CSS, Shadcn UI components
+- **Package Manager**: pnpm
 
-### Apps and Packages
+## Prerequisites
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
+- Node.js (v18 or later)
+- pnpm (v8 or later)
+- World App installed on your device
+- World ID developer account
 
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
+## Getting Started
 
-### Utilities
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/yeeetai/breeze.git
+   cd breeze
+   ```
 
-This Turborepo has some additional tools already setup for you:
+2. **Install dependencies**
+   ```bash
+   pnpm install
+   ```
 
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
+3. **Set up environment variables**
+   Create a `.env` file in the root directory with the following variables:
+   ```
+   APP_ID=your_mini_app_id
+   DEV_PORTAL_API_KEY=your_dev_portal_api_key
+   WLD_CLIENT_ID=your_wld_client_id
+   WLD_CLIENT_SECRET=your_wld_client_secret
+   ```
 
-### Build
+4. **Start the development server**
+   ```bash
+   pnpm dev
+   ```
 
-To build all apps and packages, run the following command:
+5. **Open your browser**
+   Visit `http://localhost:3000` to see the application in action.
 
-```
-cd breeze
-pnpm build
-```
+## Usage Flow
 
-### Develop
+1. **Connect Wallet**
+   - Click "Connect Wallet" to connect your Ethereum wallet
+   - Sign the message to verify wallet ownership
 
-To develop all apps and packages, run the following command:
+2. **Verify World ID**
+   - Click "Verify World ID" to verify your identity
+   - Follow the World App prompts to complete verification
 
-```
-cd breeze
-pnpm dev
-```
+3. **Start Chatting**
+   - Click "Start Chatting" to begin matching
+   - Get matched with a random person
+   - Chat for 5 minutes
+   - Option to add as friend when time's up
 
-### Remote Caching
+## Contributing
 
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-Turborepo can use a technique known as [Remote Caching](https://turbo.build/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
+## License
 
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-```
-cd breeze
-npx turbo login
-```
+## Acknowledgments
 
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-```
-npx turbo link
-```
-
-## Useful Links
-
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turbo.build/docs/core-concepts/monorepos/running-tasks)
-- [Caching](https://turbo.build/docs/core-concepts/caching)
-- [Remote Caching](https://turbo.build/docs/core-concepts/remote-caching)
-- [Filtering](https://turbo.build/docs/core-concepts/monorepos/filtering)
-- [Configuration Options](https://turbo.build/docs/reference/configuration)
-- [CLI Usage](https://turbo.build/docs/reference/command-line-reference)
+- World ID for identity verification
+- Socket.io for real-time communication
+- Shadcn UI for beautiful components
