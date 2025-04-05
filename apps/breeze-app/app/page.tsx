@@ -151,7 +151,7 @@ export default function HomePage() {
 
       {/* Success Dialog */}
       <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
-        <DialogContent>
+        <DialogContent className="w-[90%] max-w-[320px] rounded-lg">
           <DialogHeader>
             <div className="flex items-center justify-center">
               <CheckCircle2 className="h-12 w-12 text-green-500" />
@@ -174,7 +174,7 @@ export default function HomePage() {
 
       {/* Error Dialog */}
       <Dialog open={showErrorDialog} onOpenChange={setShowErrorDialog}>
-        <DialogContent>
+        <DialogContent className="w-[90%] max-w-[320px] rounded-lg">
           <DialogHeader>
             <div className="flex items-center justify-center">
               <XCircle className="h-12 w-12 text-red-500" />

@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Send, Clock, LogOut } from "lucide-react"
+import { Send, Clock, LogOut, Loader2 } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -33,6 +33,7 @@ export default function ChatPage() {
   const [timeLeft, setTimeLeft] = useState(300) // 5 minutes in seconds
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [isLeaveDialogOpen, setIsLeaveDialogOpen] = useState(false)
+  const [isLeaving, setIsLeaving] = useState(false)
 
   // Format time as MM:SS
   const formatTime = (seconds: number) => {
@@ -119,15 +120,55 @@ export default function ChatPage() {
     setInputValue("")
   }
 
-  const handleLeaveRoom = () => {
+  const handleLeaveRoom = async () => {
     if (roomId) {
-      // Leave room
-      socketClient.leaveRoom(roomId)
-      // Disconnect socket
-      socketClient.disconnect()
-      // Navigate to home page
-      router.push("/")
+      setIsLeaving(true)
+      setIsLeaveDialogOpen(false)
+
+      try {
+        // if not connected, try to connect
+        if (!socketClient.isConnected()) {
+          socketClient.connect()
+          // wait for connection
+          const maxAttempts = 10
+          let attempts = 0
+          while (!socketClient.isConnected() && attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 100))
+            attempts++
+          }
+        }
+
+        // check if socket is connected
+        if (socketClient.isConnected()) {
+          // wait for message to be sent
+          await new Promise(resolve => setTimeout(resolve, 100))
+          // leave room
+          socketClient.leaveRoom(roomId)
+          // wait for leave room request to be sent
+          await new Promise(resolve => setTimeout(resolve, 100))
+          // disconnect
+          socketClient.disconnect()
+        }
+      } catch (error) {
+        console.error("Error leaving room:", error)
+      } finally {
+        // navigate to home page
+        router.push("/")
+      }
     }
+  }
+
+  if (isLeaving) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-slate-100 to-slate-200">
+        <div className="flex flex-col items-center space-y-4">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">
+            {isLeaving ? "Leaving chat room..." : "Connecting to chat server..."}
+          </p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -193,7 +234,7 @@ export default function ChatPage() {
       </CardFooter>
 
       <Dialog open={isLeaveDialogOpen} onOpenChange={setIsLeaveDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="w-[90%] max-w-[320px] rounded-lg">
           <DialogHeader>
             <DialogTitle>Leave Chat</DialogTitle>
             <DialogDescription>

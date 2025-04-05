@@ -15,8 +15,9 @@ class SocketClient {
 
     public connect(): void {
         if (!this.socket) {
-            this.socket = io('http://localhost:3001', {
+            this.socket = io('https://breeze-server.yeeetai.dev', {
                 transports: ['websocket'],
+                secure: true
             });
 
             this.socket.on('connect', () => {
@@ -76,6 +77,10 @@ class SocketClient {
             this.socket.disconnect();
             this.socket = null;
         }
+    }
+
+    public isConnected(): boolean {
+        return this.socket?.connected ?? false;
     }
 }
 
