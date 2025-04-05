@@ -17,6 +17,7 @@ import {
 export default function HomePage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
+  const [isWalletConnected, setIsWalletConnected] = useState(false)
   const [isVerified, setIsVerified] = useState(false)
   const [showSuccessDialog, setShowSuccessDialog] = useState(false)
   const [showErrorDialog, setShowErrorDialog] = useState(false)
@@ -24,10 +25,58 @@ export default function HomePage() {
 
   const handleStartChat = () => {
     setIsLoading(true)
-    // In a real app, we would connect to a backend service here
     setTimeout(() => {
       router.push("/matching")
     }, 1000)
+  }
+
+  const verifyPayload: VerifyCommandInput = {
+    action: 'matching',
+    verification_level: VerificationLevel.Device,
+  }
+
+  const handleVerify = async () => {
+    try {
+      setIsLoading(true)
+      if (!MiniKit.isInstalled()) {
+        setErrorMessage("Please install World App to continue")
+        setShowErrorDialog(true)
+        return
+      }
+
+      const { finalPayload } = await MiniKit.commandsAsync.verify(verifyPayload)
+      if (finalPayload.status === 'error') {
+        setErrorMessage("Verification failed. Please try again.")
+        setShowErrorDialog(true)
+        return
+      }
+
+      const verifyResponse = await fetch('/api/verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          payload: finalPayload as ISuccessResult,
+          action: 'matching',
+        }),
+      })
+
+      const verifyResponseJson = await verifyResponse.json()
+      if (verifyResponseJson.status === 200) {
+        console.log('Verification success!')
+        setIsVerified(true)
+        setShowSuccessDialog(true)
+      } else {
+        setErrorMessage("Verification failed. Please try again.")
+        setShowErrorDialog(true)
+      }
+    } catch (error) {
+      setErrorMessage("An error occurred. Please try again.")
+      setShowErrorDialog(true)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const signInWithWallet = async () => {
@@ -78,12 +127,10 @@ export default function HomePage() {
       console.log("SIWE result:", siweResult)
 
       if (siweResult.isValid) {
-        setIsVerified(true)
-        setShowSuccessDialog(true)
+        setIsWalletConnected(true)
         const username = MiniKit.user?.username;
         const walletAddress = MiniKit.user?.walletAddress;
 
-        // Store MiniKit user info
         if (username) {
           localStorage.setItem('minikit_username', username);
         }
@@ -109,7 +156,7 @@ export default function HomePage() {
         <Card className="w-full max-w-md border-breeze-aqua bg-white/90 backdrop-blur-sm">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl font-bold text-breeze-dark-turquoise">Breeze</CardTitle>
-            <CardDescription className="text-lg mt-2 font-medium text-breeze-dark-cyan">Light as Air, Real as You.</CardDescription>
+            <CardDescription className="text-lg mt-2 font-medium text-breeze-dark-cyan">Light as Air, Real as You</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col items-center space-y-6 p-6">
             <div className="rounded-full bg-gradient-to-b from-breeze-mint to-breeze-cyan p-6">
@@ -129,46 +176,72 @@ export default function HomePage() {
               </svg>
             </div>
             <div className="space-y-4 text-center">
-              {/* <h3 className="text-xl font-medium text-breeze-dark-turquoise mb-3">How it works</h3> */}
               <ul className="text-base space-y-3 text-breeze-dark-cyan">
                 <li className="flex items-center justify-center space-x-2">
                   <span className="text-breeze-aqua">•</span>
-                  <span>Meet someone real, at random.</span>
+                  <span>Meet someone real, at random</span>
                 </li>
                 <li className="flex items-center justify-center space-x-2">
                   <span className="text-breeze-aqua">•</span>
-                  <span>Chat freely, for 5 minutes.</span>
+                  <span>Chat freely for 5 minutes</span>
                 </li>
                 <li className="flex items-center justify-center space-x-2">
                   <span className="text-breeze-aqua">•</span>
-                  <span>When time's up, a new friend awaits.</span>
+                  <span>When time's up, a new friend awaits</span>
                 </li>
               </ul>
             </div>
           </CardContent>
-          <CardFooter>
-            <Button
-              className="w-full bg-gradient-to-r from-breeze-mint to-breeze-cyan hover:opacity-90 text-white shadow-md"
-              size="lg"
-              onClick={(e) => {
-                e.preventDefault()
-                if (!isVerified) {
-                  signInWithWallet()
-                  return
-                }
-                handleStartChat()
-              }}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {isVerified ? "Connecting..." : "Verifying..."}
-                </>
-              ) : (
-                isVerified ? "Start Chatting" : "Verify"
-              )}
-            </Button>
+          <CardFooter className="flex flex-col space-y-2">
+            {!isWalletConnected ? (
+              <Button
+                className="w-full bg-gradient-to-r from-breeze-mint to-breeze-cyan hover:opacity-90 text-white shadow-md"
+                size="lg"
+                onClick={signInWithWallet}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Connecting...
+                  </>
+                ) : (
+                  "Connect Wallet"
+                )}
+              </Button>
+            ) : !isVerified ? (
+              <Button
+                className="w-full bg-gradient-to-r from-breeze-mint to-breeze-cyan hover:opacity-90 text-white shadow-md"
+                size="lg"
+                onClick={handleVerify}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Verifying...
+                  </>
+                ) : (
+                  "Verify WorldID"
+                )}
+              </Button>
+            ) : (
+              <Button
+                className="w-full bg-gradient-to-r from-breeze-mint to-breeze-cyan hover:opacity-90 text-white shadow-md"
+                size="lg"
+                onClick={handleStartChat}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Connecting...
+                  </>
+                ) : (
+                  "Start Chatting"
+                )}
+              </Button>
+            )}
           </CardFooter>
         </Card>
       </div>

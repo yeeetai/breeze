@@ -333,7 +333,7 @@ export default function ChatPage() {
       {showCopyToast && (
         <div className="fixed top-20 right-4 flex items-center space-x-2 rounded-lg bg-gradient-to-r from-breeze-mint to-breeze-cyan px-4 py-2 text-sm text-white shadow-lg z-50">
           <Check className="h-4 w-4" />
-          <span>World ID copied!</span>
+          <span>WorldID copied!</span>
         </div>
       )}
 
