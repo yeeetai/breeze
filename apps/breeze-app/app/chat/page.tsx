@@ -121,8 +121,8 @@ export default function ChatPage() {
 
   const handleLeaveRoom = () => {
     if (roomId) {
-      // Send system message
-      socketClient.sendMessage(roomId, "Partner has left the chat")
+      // Leave room
+      socketClient.leaveRoom(roomId)
       // Disconnect socket
       socketClient.disconnect()
       // Navigate to home page

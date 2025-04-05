@@ -65,6 +65,12 @@ class SocketClient {
         }
     }
 
+    public leaveRoom(roomId: string) {
+        if (this.socket) {
+            this.socket.emit("leaveRoom", roomId)
+        }
+    }
+
     public disconnect(): void {
         if (this.socket) {
             this.socket.disconnect();

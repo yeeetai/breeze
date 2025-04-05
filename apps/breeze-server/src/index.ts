@@ -9,29 +9,29 @@ const io = new Server(server, {
     cors: { origin: "*" },
 });
 
-// 定義用戶類型
+// Define user type
 interface User {
     id: string;
     socket: Socket;
 }
 
-// 定義聊天室類型
+// Define chat room type
 interface ChatRoom {
     users: [Socket, Socket];
     timer: NodeJS.Timeout;
 }
 
-const waitingQueue: User[] = []; // 等待配對的用戶
+const waitingQueue: User[] = []; // Waiting for match users
 const activeRooms: Record<string, ChatRoom> = {}; // { roomId: ChatRoom }
 
 io.on("connection", (socket: Socket) => {
     console.log(`User connected: ${socket.id}`);
 
-    // 用戶請求配對
+    // User requests match
     socket.on("findMatch", () => {
         if (waitingQueue.length > 0) {
-            const partner = waitingQueue.shift()!; // 取出第一個等待中的用戶
-            const roomId = uuidv4(); // 使用 UUID 生成 roomId
+            const partner = waitingQueue.shift()!; // Get the first user in the waiting queue
+            const roomId = uuidv4(); // Generate roomId using UUID
 
             socket.join(roomId);
             partner.socket.join(roomId);
@@ -45,30 +45,41 @@ io.on("connection", (socket: Socket) => {
         }
     });
 
-    // 用戶加入房間
+    // User joins room
     socket.on("joinRoom", (roomId: string) => {
         socket.join(roomId);
         console.log(`User ${socket.id} joined room ${roomId}`);
     });
 
-    // 用戶傳送訊息
+    // User leaves room
+    socket.on("leaveRoom", (roomId: string) => {
+        socket.leave(roomId);
+        // Notify other users in the room
+        socket.to(roomId).emit("receiveMessage", {
+            message: "Partner has left the chat",
+            sender: "system"
+        });
+        console.log(`User ${socket.id} left room ${roomId}`);
+    });
+
+    // User sends message
     socket.on("sendMessage", ({ roomId, message }: { roomId: string; message: string }) => {
         console.log(`Message received in room ${roomId}:`, message);
         socket.to(roomId).emit("receiveMessage", { sender: socket.id, message });
     });
 
-    // 用戶離線處理
+    // User offline processing
     socket.on("disconnect", () => {
         console.log(`User disconnected: ${socket.id}`);
 
-        // 從等待池移除
+        // Remove from waiting queue
         const index = waitingQueue.findIndex((user) => user.id === socket.id);
         if (index !== -1) {
             waitingQueue.splice(index, 1);
             console.log(`User ${socket.id} removed from waiting queue`);
         }
 
-        // 檢查是否在聊天室中
+        // Check if in chat room
         for (const roomId in activeRooms) {
             const { users, timer } = activeRooms[roomId];
             if (users.some((user) => user.id === socket.id)) {
