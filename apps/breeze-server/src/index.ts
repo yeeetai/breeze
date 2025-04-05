@@ -96,6 +96,14 @@ io.on("connection", (socket: Socket) => {
         console.log(`User ${socket.id} left room ${roomId}`);
     });
 
+    // This is used to leave room without notifying other users
+    socket.on("quietLeaveRoom", (roomId: string) => {
+        socket.leave(roomId);
+        delete socket.data.roomId;  // Remove roomId from socket data
+
+        console.log(`User ${socket.id} left room ${roomId}`);
+    });
+
     // User sends message
     socket.on("sendMessage", ({ roomId, message }: { roomId: string; message: string }) => {
         console.log(`Message received in room ${roomId}:`, message);

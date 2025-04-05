@@ -39,6 +39,7 @@ export default function ChatPage() {
   const [showSuccessDialog, setShowSuccessDialog] = useState(false)
   const [showRejectDialog, setShowRejectDialog] = useState(false)
   const [isWaitingResponse, setIsWaitingResponse] = useState(false)
+  const [quietLeave, setQuietLeave] = useState(false)
   const [partnerName, setPartnerName] = useState<string | null>(null)
   const [nameInput, setNameInput] = useState("")
 
@@ -181,7 +182,11 @@ export default function ChatPage() {
           // wait for message to be sent
           await new Promise(resolve => setTimeout(resolve, 100))
           // leave room
-          socketClient.leaveRoom(roomId)
+          if (quietLeave) {
+            socketClient.quietLeaveRoom(roomId)
+          } else {
+            socketClient.leaveRoom(roomId)
+          }
           // wait for leave room request to be sent
           await new Promise(resolve => setTimeout(resolve, 100))
           // disconnect
@@ -203,8 +208,8 @@ export default function ChatPage() {
 
   const handleRejectFriend = () => {
     if (roomId) {
+      setQuietLeave(true)
       socketClient.rejectFriendRequest(roomId)
-      setShowInviteDialog(false)
       handleLeaveRoom()
     }
   }

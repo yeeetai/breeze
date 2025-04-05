@@ -15,7 +15,7 @@ class SocketClient {
 
     public connect(): void {
         if (!this.socket) {
-            this.socket = io('https://breeze-server.yeeetai.dev', {
+            this.socket = io('https://sutando-server.yeeetai.dev', {
                 transports: ['websocket'],
                 secure: true
             });
@@ -103,9 +103,11 @@ class SocketClient {
     }
 
     public leaveRoom(roomId: string) {
-        if (this.socket) {
-            this.socket.emit("leaveRoom", roomId)
-        }
+        this.socket?.emit("leaveRoom", { roomId })
+    }
+
+    public quietLeaveRoom(roomId: string) {
+        this.socket?.emit("quietLeaveRoom", { roomId })
     }
 
     public disconnect(): void {
