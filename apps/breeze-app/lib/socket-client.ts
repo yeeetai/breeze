@@ -36,15 +36,33 @@ class SocketClient {
         }
     }
 
-    public findMatch(): void {
+    public findMatch(userId: string): void {
         if (this.socket) {
-            this.socket.emit('findMatch');
+            this.socket.emit('findMatch', userId);
         }
     }
 
     public sendMessage(roomId: string, message: string): void {
         if (this.socket) {
-            this.socket.emit('sendMessage', { roomId, message });
+            this.socket.emit('sendMessage', { roomId, message, sender: 'user' });
+        }
+    }
+
+    public sendFriendRequest(roomId: string): void {
+        if (this.socket) {
+            this.socket.emit('friendRequest', { roomId });
+        }
+    }
+
+    public acceptFriendRequest(roomId: string, name: string): void {
+        if (this.socket) {
+            this.socket.emit('acceptFriendRequest', { roomId, name });
+        }
+    }
+
+    public rejectFriendRequest(roomId: string): void {
+        if (this.socket) {
+            this.socket.emit('rejectFriendRequest', { roomId });
         }
     }
 
@@ -54,7 +72,7 @@ class SocketClient {
         }
     }
 
-    public onReceiveMessage(callback: (data: { sender: string; message: string }) => void): void {
+    public onReceiveMessage(callback: (data: { message: string; sender: string }) => void): void {
         if (this.socket) {
             this.socket.on('receiveMessage', callback);
         }
@@ -63,6 +81,24 @@ class SocketClient {
     public onPartnerLeft(callback: () => void): void {
         if (this.socket) {
             this.socket.on('partnerLeft', callback);
+        }
+    }
+
+    public onFriendRequest(callback: () => void): void {
+        if (this.socket) {
+            this.socket.on('friendRequest', callback);
+        }
+    }
+
+    public onFriendRequestAccepted(callback: (data: { name: string }) => void): void {
+        if (this.socket) {
+            this.socket.on('friendRequestAccepted', callback);
+        }
+    }
+
+    public onFriendRequestRejected(callback: () => void): void {
+        if (this.socket) {
+            this.socket.on('friendRequestRejected', callback);
         }
     }
 

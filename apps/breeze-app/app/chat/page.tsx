@@ -30,10 +30,17 @@ export default function ChatPage() {
   const roomId = searchParams.get("roomId")
   const [messages, setMessages] = useState<Message[]>([])
   const [inputValue, setInputValue] = useState("")
-  const [timeLeft, setTimeLeft] = useState(300) // 5 minutes in seconds
+  const [timeLeft, setTimeLeft] = useState(2) // 5 minutes in seconds
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [isLeaveDialogOpen, setIsLeaveDialogOpen] = useState(false)
   const [isLeaving, setIsLeaving] = useState(false)
+  const [showInviteDialog, setShowInviteDialog] = useState(false)
+  const [showNameInputDialog, setShowNameInputDialog] = useState(false)
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false)
+  const [showRejectDialog, setShowRejectDialog] = useState(false)
+  const [isWaitingResponse, setIsWaitingResponse] = useState(false)
+  const [partnerName, setPartnerName] = useState<string | null>(null)
+  const [nameInput, setNameInput] = useState("")
 
   // Format time as MM:SS
   const formatTime = (seconds: number) => {
@@ -50,7 +57,7 @@ export default function ChatPage() {
   // Timer countdown
   useEffect(() => {
     if (timeLeft <= 0) {
-      router.push("/chat-ended")
+      setShowInviteDialog(true)
       return
     }
 
@@ -59,7 +66,7 @@ export default function ChatPage() {
     }, 1000)
 
     return () => clearInterval(timer)
-  }, [timeLeft, router])
+  }, [timeLeft])
 
   // Socket connection and message handling
   useEffect(() => {
@@ -91,6 +98,37 @@ export default function ChatPage() {
     // Listen for partner leaving
     socketClient.onPartnerLeft(() => {
       router.push("/chat-ended")
+    })
+
+    // Listen for friend request accepted
+    socketClient.onFriendRequestAccepted((data) => {
+      setPartnerName(data.name)
+      setShowSuccessDialog(true)
+      setIsWaitingResponse(false)
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now().toString(),
+          content: `${data.name} has accepted your friend request!`,
+          sender: "system",
+          timestamp: new Date(),
+        },
+      ])
+    })
+
+    // Listen for friend request rejected
+    socketClient.onFriendRequestRejected(() => {
+      setShowRejectDialog(true)
+      setIsWaitingResponse(false)
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now().toString(),
+          content: "Friend request was rejected",
+          sender: "system",
+          timestamp: new Date(),
+        },
+      ])
     })
 
     return () => {
@@ -158,13 +196,44 @@ export default function ChatPage() {
     }
   }
 
-  if (isLeaving) {
+  const handleAcceptFriend = () => {
+    setShowInviteDialog(false)
+    setShowNameInputDialog(true)
+  }
+
+  const handleRejectFriend = () => {
+    if (roomId) {
+      socketClient.rejectFriendRequest(roomId)
+      setShowInviteDialog(false)
+      handleLeaveRoom()
+    }
+  }
+
+  const handleSubmitName = () => {
+    if (nameInput.trim() && roomId) {
+      socketClient.acceptFriendRequest(roomId, nameInput.trim())
+      setShowNameInputDialog(false)
+      setNameInput("")
+      setIsWaitingResponse(true)
+    }
+  }
+
+  const handleCloseSuccessDialog = () => {
+    setShowSuccessDialog(false)
+  }
+
+  const handleCloseRejectDialog = () => {
+    setShowRejectDialog(false)
+    handleLeaveRoom()
+  }
+
+  if (isLeaving || isWaitingResponse) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-slate-100 to-slate-200">
         <div className="flex flex-col items-center space-y-4">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
           <p className="text-sm text-muted-foreground">
-            {isLeaving ? "Leaving chat room..." : "Connecting to chat server..."}
+            {isLeaving ? "Leaving chat room..." : "Waiting for partner's response..."}
           </p>
         </div>
       </div>
@@ -176,7 +245,7 @@ export default function ChatPage() {
       <CardHeader className="flex flex-row items-center justify-between bg-white p-4 shadow-sm">
         <div className="flex items-center space-x-2">
           <div className="h-3 w-3 rounded-full bg-green-500"></div>
-          <span className="text-sm font-medium">Anonymous Partner</span>
+          <span className="text-sm font-medium">{partnerName || "Anonymous Partner"}</span>
         </div>
         <div className="flex items-center space-x-2 rounded-full bg-slate-100 px-3 py-1">
           <Clock className="h-4 w-4 text-slate-500" />
@@ -233,6 +302,92 @@ export default function ChatPage() {
         </form>
       </CardFooter>
 
+      {/* 好友邀请对话框 */}
+      <Dialog open={showInviteDialog} onOpenChange={setShowInviteDialog}>
+        <DialogContent className="w-[90%] max-w-[320px] rounded-lg">
+          <DialogHeader>
+            <DialogTitle className="text-center">Time's Up!</DialogTitle>
+            <DialogDescription className="text-center">
+              Would you like to add this person as a friend to continue chatting?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col space-y-2">
+            <Button onClick={handleAcceptFriend}>
+              Yes, add friend
+            </Button>
+            <Button variant="outline" onClick={handleRejectFriend}>
+              No, thanks
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* 名字输入对话框 */}
+      <Dialog open={showNameInputDialog} onOpenChange={setShowNameInputDialog}>
+        <DialogContent className="w-[90%] max-w-[320px] rounded-lg">
+          <DialogHeader>
+            <DialogTitle className="text-center">Enter Your Name</DialogTitle>
+            <DialogDescription className="text-center">
+              Please enter your name to share with your new friend
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col space-y-4">
+            <Input
+              value={nameInput}
+              onChange={(e) => setNameInput(e.target.value)}
+              placeholder="Your name"
+              className="w-full"
+            />
+            <div className="flex flex-col space-y-2">
+              <Button onClick={handleSubmitName} disabled={!nameInput.trim()}>
+                Submit
+              </Button>
+              <Button variant="outline" onClick={() => {
+                setShowNameInputDialog(false)
+                handleLeaveRoom()
+              }}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* 成功对话框 */}
+      <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
+        <DialogContent className="w-[90%] max-w-[320px] rounded-lg">
+          <DialogHeader>
+            <DialogTitle className="text-center">Success!</DialogTitle>
+            <DialogDescription className="text-center">
+              You and {partnerName} are now friends! You can continue chatting.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col space-y-2">
+            <Button onClick={handleCloseSuccessDialog}>
+              Continue Chatting
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* 遗憾对话框 */}
+      <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
+        <DialogContent className="w-[90%] max-w-[320px] rounded-lg">
+          <DialogHeader>
+            <DialogTitle className="text-center">Request Rejected</DialogTitle>
+            <DialogDescription className="text-center">
+              Your friend request was rejected. The chat will end now.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col space-y-2">
+            <Button onClick={handleCloseRejectDialog}>
+              Return to Home
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* 离开房间对话框 */}
       <Dialog open={isLeaveDialogOpen} onOpenChange={setIsLeaveDialogOpen}>
         <DialogContent className="w-[90%] max-w-[320px] rounded-lg">
           <DialogHeader>
