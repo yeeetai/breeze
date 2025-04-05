@@ -31,7 +31,7 @@ export default function ChatPage() {
   const roomId = searchParams.get("roomId")
   const [messages, setMessages] = useState<Message[]>([])
   const [inputValue, setInputValue] = useState("")
-  const [timeLeft, setTimeLeft] = useState(5) // 5 minutes in seconds
+  const [timeLeft, setTimeLeft] = useState(300) // 5 minutes in seconds
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [isLeaveDialogOpen, setIsLeaveDialogOpen] = useState(false)
   const [isLeaving, setIsLeaving] = useState(false)
@@ -41,6 +41,7 @@ export default function ChatPage() {
   const [showRejectDialog, setShowRejectDialog] = useState(false)
   const [isWaitingResponse, setIsWaitingResponse] = useState(false)
   const [quietLeave, setQuietLeave] = useState(false)
+  const [shouldLeave, setShouldLeave] = useState(false)
   const [partnerName, setPartnerName] = useState<string | null>(null)
   const [nameInput, setNameInput] = useState("")
   const [showCopyToast, setShowCopyToast] = useState(false)
@@ -113,7 +114,9 @@ export default function ChatPage() {
 
     // Listen for partner leaving
     socketClient.onPartnerLeft(() => {
-      router.push("/chat-ended")
+      if (!quietLeave) {
+        router.push("/chat-ended")
+      }
     })
 
     // Listen for friend request accepted
@@ -140,7 +143,7 @@ export default function ChatPage() {
         ...prev,
         {
           id: Date.now().toString(),
-          content: "Friend request was rejected",
+          content: "Partner request was rejected",
           sender: "system",
           timestamp: new Date(),
         },
@@ -151,6 +154,14 @@ export default function ChatPage() {
       socketClient.disconnect()
     }
   }, [roomId, router])
+
+  // 监听 quietLeave 变化
+  useEffect(() => {
+    if (shouldLeave) {
+      handleLeaveRoom()
+      setShouldLeave(false)
+    }
+  }, [quietLeave, shouldLeave])
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault()
@@ -246,7 +257,7 @@ export default function ChatPage() {
     if (roomId) {
       setQuietLeave(true)
       socketClient.rejectFriendRequest(roomId)
-      handleLeaveRoom()
+      setShouldLeave(true)
     }
   }
 
@@ -265,7 +276,8 @@ export default function ChatPage() {
 
   const handleCloseRejectDialog = () => {
     setShowRejectDialog(false)
-    handleLeaveRoom()
+    setQuietLeave(true)
+    setShouldLeave(true)
   }
 
   const handleCopyName = () => {
@@ -487,7 +499,7 @@ export default function ChatPage() {
           <DialogHeader>
             <DialogTitle className="text-center text-breeze-dark-turquoise">Not This Time, But Keep Going!</DialogTitle>
             <DialogDescription className="text-center text-breeze-dark-cyan">
-              Don’t worry – more friends await!
+              Don't worry – more friends await!
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-center">
