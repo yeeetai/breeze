@@ -15,24 +15,9 @@ export default function ChatEndedPage() {
         </CardHeader>
         <CardContent className="flex flex-col items-center space-y-6 p-6 text-center">
           <div className="rounded-full bg-primary/10 p-6">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="64"
-              height="64"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="text-primary"
-            >
-              <path d="M18 6 6 18" />
-              <path d="m6 6 12 12" />
-            </svg>
+            <span className="text-6xl">👋</span>
           </div>
           <div className="space-y-2">
-            <h3 className="text-lg font-medium">Your 5-minute chat has ended</h3>
             <p className="text-sm text-muted-foreground">
               Would you like to start a new conversation with someone else?
             </p>

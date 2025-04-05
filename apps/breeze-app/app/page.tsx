@@ -80,6 +80,16 @@ export default function HomePage() {
       if (siweResult.isValid) {
         setIsVerified(true)
         setShowSuccessDialog(true)
+        const username = MiniKit.user?.username;
+        const walletAddress = MiniKit.user?.walletAddress;
+
+        // Store MiniKit user info
+        if (username) {
+          localStorage.setItem('minikit_username', username);
+        }
+        if (walletAddress) {
+          localStorage.setItem('minikit_wallet_address', walletAddress);
+        }
       } else {
         setErrorMessage(siweResult.message || "Verification failed")
         setShowErrorDialog(true)

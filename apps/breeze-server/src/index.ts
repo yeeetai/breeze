@@ -84,7 +84,7 @@ io.on("connection", (socket: Socket) => {
     });
 
     // User leaves room
-    socket.on("leaveRoom", (roomId: string) => {
+    socket.on("leaveRoom", ({ roomId }: { roomId: string }) => {
         socket.leave(roomId);
         delete socket.data.roomId;  // Remove roomId from socket data
 
@@ -97,7 +97,7 @@ io.on("connection", (socket: Socket) => {
     });
 
     // This is used to leave room without notifying other users
-    socket.on("quietLeaveRoom", (roomId: string) => {
+    socket.on("quietLeaveRoom", ({ roomId }: { roomId: string }) => {
         socket.leave(roomId);
         delete socket.data.roomId;  // Remove roomId from socket data
 
@@ -108,6 +108,12 @@ io.on("connection", (socket: Socket) => {
     socket.on("sendMessage", ({ roomId, message }: { roomId: string; message: string }) => {
         console.log(`Message received in room ${roomId}:`, message);
         socket.to(roomId).emit("receiveMessage", { sender: socket.id, message });
+    });
+
+    // User is typing
+    socket.on("typing", ({ roomId }: { roomId: string }) => {
+        console.log(`User ${socket.id} is typing in room ${roomId}`);
+        socket.to(roomId).emit("partnerTyping");
     });
 
     // User sends friend request

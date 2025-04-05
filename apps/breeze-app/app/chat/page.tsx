@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Send, Clock, LogOut, Loader2 } from "lucide-react"
+import { Send, Clock, LogOut, Loader2, Check } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -16,6 +16,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { socketClient } from "@/lib/socket-client"
+import { MiniKit } from '@worldcoin/minikit-js'
 
 type Message = {
   id: string
@@ -30,7 +31,7 @@ export default function ChatPage() {
   const roomId = searchParams.get("roomId")
   const [messages, setMessages] = useState<Message[]>([])
   const [inputValue, setInputValue] = useState("")
-  const [timeLeft, setTimeLeft] = useState(2) // 5 minutes in seconds
+  const [timeLeft, setTimeLeft] = useState(300) // 5 minutes in seconds
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [isLeaveDialogOpen, setIsLeaveDialogOpen] = useState(false)
   const [isLeaving, setIsLeaving] = useState(false)
@@ -42,6 +43,9 @@ export default function ChatPage() {
   const [quietLeave, setQuietLeave] = useState(false)
   const [partnerName, setPartnerName] = useState<string | null>(null)
   const [nameInput, setNameInput] = useState("")
+  const [showCopyToast, setShowCopyToast] = useState(false)
+  const [isPartnerTyping, setIsPartnerTyping] = useState(false)
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   // Format time as MM:SS
   const formatTime = (seconds: number) => {
@@ -94,6 +98,17 @@ export default function ChatPage() {
           timestamp: new Date(),
         },
       ])
+    })
+
+    // Listen for typing status
+    socketClient.onPartnerTyping(() => {
+      setIsPartnerTyping(true)
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current)
+      }
+      typingTimeoutRef.current = setTimeout(() => {
+        setIsPartnerTyping(false)
+      }, 3000)
     })
 
     // Listen for partner leaving
@@ -159,6 +174,13 @@ export default function ChatPage() {
     setInputValue("")
   }
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInputValue(e.target.value)
+    if (roomId) {
+      socketClient.sendTypingStatus(roomId)
+    }
+  }
+
   const handleLeaveRoom = async () => {
     if (roomId) {
       setIsLeaving(true)
@@ -195,15 +217,29 @@ export default function ChatPage() {
       } catch (error) {
         console.error("Error leaving room:", error)
       } finally {
-        // navigate to home page
-        router.push("/")
+        // navigate to chat ended page
+        router.push("/chat-ended")
       }
     }
   }
 
   const handleAcceptFriend = () => {
     setShowInviteDialog(false)
-    setShowNameInputDialog(true)
+    if (!roomId) return
+
+    if (MiniKit.isInstalled()) {
+      // Use stored MiniKit username
+      const username = MiniKit.user?.username || localStorage.getItem('minikit_username') || "";
+      if (username) {
+        socketClient.acceptFriendRequest(roomId, username)
+        setIsWaitingResponse(true)
+      } else {
+        setShowNameInputDialog(true)
+      }
+    } else {
+      // Show name input dialog if MiniKit is not installed
+      setShowNameInputDialog(true)
+    }
   }
 
   const handleRejectFriend = () => {
@@ -232,6 +268,14 @@ export default function ChatPage() {
     handleLeaveRoom()
   }
 
+  const handleCopyName = () => {
+    if (partnerName) {
+      navigator.clipboard.writeText(partnerName)
+      setShowCopyToast(true)
+      setTimeout(() => setShowCopyToast(false), 2000)
+    }
+  }
+
   if (isLeaving || isWaitingResponse) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-slate-100 to-slate-200">
@@ -250,13 +294,34 @@ export default function ChatPage() {
       <CardHeader className="flex flex-row items-center justify-between bg-white p-4 shadow-sm">
         <div className="flex items-center space-x-2">
           <div className="h-3 w-3 rounded-full bg-green-500"></div>
-          <span className="text-sm font-medium">{partnerName || "Anonymous Partner"}</span>
+          {partnerName ? (
+            <div className="flex items-center space-x-2">
+              <span
+                className="text-sm font-medium cursor-pointer hover:text-primary transition-colors"
+                onClick={handleCopyName}
+              >
+                {partnerName}
+              </span>
+            </div>
+          ) : (
+            <span className="text-sm font-medium">Anonymous Partner</span>
+          )}
         </div>
-        <div className="flex items-center space-x-2 rounded-full bg-slate-100 px-3 py-1">
-          <Clock className="h-4 w-4 text-slate-500" />
-          <span className={`text-sm font-medium ${timeLeft < 60 ? "text-red-500" : ""}`}>{formatTime(timeLeft)}</span>
-        </div>
+        {!partnerName && (
+          <div className="flex items-center space-x-2 rounded-full bg-slate-100 px-3 py-1">
+            <Clock className="h-4 w-4 text-slate-500" />
+            <span className={`text-sm font-medium ${timeLeft < 60 ? "text-red-500" : ""}`}>{formatTime(timeLeft)}</span>
+          </div>
+        )}
       </CardHeader>
+
+      {/* Copy success toast */}
+      {showCopyToast && (
+        <div className="fixed top-4 right-4 flex items-center space-x-2 rounded-lg bg-slate-900 px-4 py-2 text-sm text-white shadow-lg">
+          <Check className="h-4 w-4" />
+          <span>Name copied to clipboard!</span>
+        </div>
+      )}
 
       <CardContent className="flex-1 overflow-y-auto p-4">
         <div className="space-y-4">
@@ -279,11 +344,18 @@ export default function ChatPage() {
               )}
             </div>
           ))}
+          {isPartnerTyping && (
+            <div className="flex justify-start">
+              <div className="max-w-[80%] rounded-lg bg-slate-200 px-4 py-2 text-slate-900">
+                <p className="text-sm italic">Typing...</p>
+              </div>
+            </div>
+          )}
           <div ref={messagesEndRef} />
         </div>
       </CardContent>
 
-      <CardFooter className="border-t bg-white p-4">
+      <CardFooter className="border-t bg-white p-4 pb-8">
         <form onSubmit={handleSendMessage} className="flex w-full space-x-2">
           <Button
             type="button"
@@ -297,7 +369,7 @@ export default function ChatPage() {
           </Button>
           <Input
             value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
+            onChange={handleInputChange}
             placeholder="Type a message..."
             className="flex-1"
           />
@@ -307,7 +379,7 @@ export default function ChatPage() {
         </form>
       </CardFooter>
 
-      {/* 好友邀请对话框 */}
+      {/* Friend request dialog */}
       <Dialog open={showInviteDialog} onOpenChange={setShowInviteDialog}>
         <DialogContent className="w-[90%] max-w-[320px] rounded-lg">
           <DialogHeader>
@@ -327,7 +399,7 @@ export default function ChatPage() {
         </DialogContent>
       </Dialog>
 
-      {/* 名字输入对话框 */}
+      {/* Name input dialog */}
       <Dialog open={showNameInputDialog} onOpenChange={setShowNameInputDialog}>
         <DialogContent className="w-[90%] max-w-[320px] rounded-lg">
           <DialogHeader>
@@ -358,11 +430,11 @@ export default function ChatPage() {
         </DialogContent>
       </Dialog>
 
-      {/* 成功对话框 */}
+      {/* Success dialog */}
       <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
         <DialogContent className="w-[90%] max-w-[320px] rounded-lg">
           <DialogHeader>
-            <DialogTitle className="text-center">Success!</DialogTitle>
+            <DialogTitle className="text-center">Success! <span className="text-4xl">🎉</span></DialogTitle>
             <DialogDescription className="text-center">
               You and {partnerName} are now friends! You can continue chatting.
             </DialogDescription>
@@ -375,11 +447,11 @@ export default function ChatPage() {
         </DialogContent>
       </Dialog>
 
-      {/* 遗憾对话框 */}
+      {/* Reject dialog */}
       <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
         <DialogContent className="w-[90%] max-w-[320px] rounded-lg">
           <DialogHeader>
-            <DialogTitle className="text-center">Request Rejected</DialogTitle>
+            <DialogTitle className="text-center">Request Rejected <span className="text-4xl">😐</span></DialogTitle>
             <DialogDescription className="text-center">
               Your friend request was rejected. The chat will end now.
             </DialogDescription>
@@ -392,7 +464,7 @@ export default function ChatPage() {
         </DialogContent>
       </Dialog>
 
-      {/* 离开房间对话框 */}
+      {/* Leave room dialog */}
       <Dialog open={isLeaveDialogOpen} onOpenChange={setIsLeaveDialogOpen}>
         <DialogContent className="w-[90%] max-w-[320px] rounded-lg">
           <DialogHeader>

@@ -36,9 +36,9 @@ class SocketClient {
         }
     }
 
-    public findMatch(userId: string): void {
+    public findMatch(): void {
         if (this.socket) {
-            this.socket.emit('findMatch', userId);
+            this.socket.emit('findMatch');
         }
     }
 
@@ -99,6 +99,18 @@ class SocketClient {
     public onFriendRequestRejected(callback: () => void): void {
         if (this.socket) {
             this.socket.on('friendRequestRejected', callback);
+        }
+    }
+
+    public onPartnerTyping(callback: () => void): void {
+        if (this.socket) {
+            this.socket.on('partnerTyping', callback);
+        }
+    }
+
+    public sendTypingStatus(roomId: string): void {
+        if (this.socket) {
+            this.socket.emit('typing', { roomId });
         }
     }
 
