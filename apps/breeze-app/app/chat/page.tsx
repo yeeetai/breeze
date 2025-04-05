@@ -7,12 +7,20 @@ import { Button } from "@/components/ui/button"
 import { CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Send, Clock, LogOut } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { socketClient } from "@/lib/socket-client"
 
 type Message = {
   id: string
   content: string
-  sender: "user" | "partner"
+  sender: "user" | "partner" | "system"
   timestamp: Date
 }
 
@@ -24,6 +32,7 @@ export default function ChatPage() {
   const [inputValue, setInputValue] = useState("")
   const [timeLeft, setTimeLeft] = useState(300) // 5 minutes in seconds
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const [isLeaveDialogOpen, setIsLeaveDialogOpen] = useState(false)
 
   // Format time as MM:SS
   const formatTime = (seconds: number) => {
@@ -66,13 +75,13 @@ export default function ChatPage() {
 
     // Listen for messages
     socketClient.onReceiveMessage((data) => {
-      console.log("Received message:", data) // 添加调试日志
+      console.log("Received message:", data)
       setMessages((prev) => [
         ...prev,
         {
           id: Date.now().toString(),
           content: data.message,
-          sender: "partner",
+          sender: data.sender === "system" ? "system" : "partner",
           timestamp: new Date(),
         },
       ])
@@ -110,6 +119,17 @@ export default function ChatPage() {
     setInputValue("")
   }
 
+  const handleLeaveRoom = () => {
+    if (roomId) {
+      // Send system message
+      socketClient.sendMessage(roomId, "Partner has left the chat")
+      // Disconnect socket
+      socketClient.disconnect()
+      // Navigate to home page
+      router.push("/")
+    }
+  }
+
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-b from-slate-100 to-slate-200">
       <CardHeader className="flex flex-row items-center justify-between bg-white p-4 shadow-sm">
@@ -127,15 +147,21 @@ export default function ChatPage() {
         <div className="space-y-4">
           {messages.map((message) => (
             <div key={message.id} className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"}`}>
-              <div
-                className={`max-w-[80%] rounded-lg px-4 py-2 ${message.sender === "user" ? "bg-primary text-primary-foreground" : "bg-slate-200 text-slate-900"
-                  }`}
-              >
-                <p>{message.content}</p>
-                <p className="mt-1 text-right text-xs opacity-70">
-                  {message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                </p>
-              </div>
+              {message.sender === "system" ? (
+                <div className="mx-auto rounded-full bg-slate-200 px-4 py-1 text-sm text-slate-500">
+                  {message.content}
+                </div>
+              ) : (
+                <div
+                  className={`max-w-[80%] rounded-lg px-4 py-2 ${message.sender === "user" ? "bg-primary text-primary-foreground" : "bg-slate-200 text-slate-900"
+                    }`}
+                >
+                  <p>{message.content}</p>
+                  <p className="mt-1 text-right text-xs opacity-70">
+                    {message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  </p>
+                </div>
+              )}
             </div>
           ))}
           <div ref={messagesEndRef} />
@@ -149,11 +175,7 @@ export default function ChatPage() {
             variant="outline"
             size="icon"
             className="shrink-0"
-            onClick={() => {
-              if (confirm("Are you sure you want to leave this chat?")) {
-                router.push("/")
-              }
-            }}
+            onClick={() => setIsLeaveDialogOpen(true)}
           >
             <LogOut className="h-4 w-4" />
             <span className="sr-only">Leave Room</span>
@@ -169,6 +191,25 @@ export default function ChatPage() {
           </Button>
         </form>
       </CardFooter>
+
+      <Dialog open={isLeaveDialogOpen} onOpenChange={setIsLeaveDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Leave Chat</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to leave this chat? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex flex-row justify-end gap-2 sm:justify-end">
+            <Button type="button" variant="outline" onClick={() => setIsLeaveDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="button" variant="destructive" onClick={handleLeaveRoom}>
+              Leave Chat
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
