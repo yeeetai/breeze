@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { CardContent, CardFooter, CardHeader } from "@/components/ui/card"
@@ -25,7 +25,7 @@ type Message = {
   timestamp: Date
 }
 
-export default function ChatPage() {
+function ChatContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const roomId = searchParams.get("roomId")
@@ -548,6 +548,21 @@ export default function ChatPage() {
         </DialogContent>
       </Dialog>
     </div>
+  )
+}
+
+export default function ChatPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-breeze-mint to-breeze-cyan">
+        <div className="flex items-center gap-2">
+          <Loader2 className="h-6 w-6 animate-spin text-white" />
+          <span className="text-white">Loading chat...</span>
+        </div>
+      </div>
+    }>
+      <ChatContent />
+    </Suspense>
   )
 }
 
